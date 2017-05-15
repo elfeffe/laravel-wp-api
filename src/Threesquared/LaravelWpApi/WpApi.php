@@ -1,29 +1,23 @@
 <?php namespace Threesquared\LaravelWpApi;
-
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
-
 class WpApi
 {
-
     /**
      * Guzzle client
      * @var Client
      */
     protected $client;
-
     /**
      * WP-WPI endpoint URL
      * @var string
      */
     protected $endpoint;
-
     /**
      * Auth headers
      * @var string
      */
     protected $auth;
-
     /**
      * Constructor
      *
@@ -31,13 +25,12 @@ class WpApi
      * @param Client $client
      * @param string $auth
      */
-    public function __construct($endpoint, Client $client, $auth = null)
+    public function __construct($endpoint, Client $client = null, $auth = null)
     {
         $this->endpoint = $endpoint;
-        $this->client   = $client;
+        $this->client   = ($client) ? $client : new Client;
         $this->auth     = $auth;
     }
-
     /**
      * Get all posts
      *
@@ -48,7 +41,6 @@ class WpApi
     {
         return $this->get('posts', ['page' => $page]);
     }
-
     /**
      * Get all pages
      *
@@ -59,7 +51,6 @@ class WpApi
     {
         return $this->get('posts', ['type' => 'page', 'page' => $page]);
     }
-
     /**
      * Get post by id
      *
@@ -70,7 +61,6 @@ class WpApi
     {
         return $this->get("posts/$id");
     }
-
     /**
      * Get post by slug
      *
@@ -79,7 +69,18 @@ class WpApi
      */
     public function post($slug)
     {
-        return $this->get('posts', ['filter' => ['name' => $slug]]);
+        return $this->get('posts', ['slug' =>  $slug]);
+    }
+
+    /**
+     * Get media by id
+     *
+     * @param  string $slug
+     * @return array
+     */
+    public function mediaId($id)
+    {
+        return $this->get("media/$id");
     }
 
     /**
@@ -92,7 +93,6 @@ class WpApi
     {
         return $this->get('posts', ['type' => 'page', 'filter' => ['name' => $slug]]);
     }
-
     /**
      * Get all categories
      *
@@ -102,7 +102,6 @@ class WpApi
     {
         return $this->get('taxonomies/category/terms');
     }
-
     /**
      * Get all tags
      *
@@ -112,7 +111,6 @@ class WpApi
     {
         return $this->get('taxonomies/post_tag/terms');
     }
-
     /**
      * Get posts from category
      *
@@ -124,7 +122,6 @@ class WpApi
     {
         return $this->get('posts', ['page' => $page, 'filter' => ['category_name' => $slug]]);
     }
-
     /**
      * Get posts by author
      *
@@ -136,7 +133,6 @@ class WpApi
     {
         return $this->get('posts', ['page' => $page, 'filter' => ['author_name' => $name]]);
     }
-
     /**
      * Get posts tagged with tag
      *
@@ -148,7 +144,6 @@ class WpApi
     {
         return $this->get('posts', ['page' => $page, 'filter' => ['tag' => $tags]]);
     }
-
     /**
      * Search posts
      *
@@ -160,7 +155,6 @@ class WpApi
     {
         return $this->get('posts', ['page' => $page, 'filter' => ['s' => $query]]);
     }
-
     /**
      * Get posts by date
      *
@@ -173,7 +167,6 @@ class WpApi
     {
         return $this->get('posts', ['page' => $page, 'filter' => ['year' => $year, 'monthnum' => $month]]);
     }
-
     /**
      * Get data from the API
      *
@@ -185,39 +178,28 @@ class WpApi
     {
 
         try {
-
             $query = ['query' => $query];
-
             if ($this->auth) {
                 $query['auth'] = $this->auth;
             }
-
             $response = $this->client->get($this->endpoint . $method, $query);
-
             $return = [
                 'results' => json_decode((string) $response->getBody(), true),
                 'total'   => $response->getHeaderLine('X-WP-Total'),
                 'pages'   => $response->getHeaderLine('X-WP-TotalPages')
             ];
-
         } catch (RequestException $e) {
-
             $error['message'] = $e->getMessage();
-
             if ($e->getResponse()) {
                 $error['code'] = $e->getResponse()->getStatusCode();
             }
-
             $return = [
                 'error'   => $error,
                 'results' => [],
                 'total'   => 0,
                 'pages'   => 0
             ];
-
         }
-
         return $return;
-
     }
 }
